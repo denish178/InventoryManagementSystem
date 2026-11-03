@@ -1,0 +1,32 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# .NET build files
+**/bin/
+**/obj/
+**/publish/
+*.log
+
+# Node / Angular
+**/node_modules/
+**/dist/
+.angular/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# IDE
+.idea/
+
+# Backend local configuration
+**/appsettings.Development.json
+
+# Build output
+**/bin/
+**/obj/
