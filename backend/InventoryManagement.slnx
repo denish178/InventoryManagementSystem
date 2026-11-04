@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="InventoryManagement.Api/InventoryManagement.Api.csproj" />
+  <Project Path="InventoryManagement.Api.Tests/InventoryManagement.Api.Tests.csproj" />
 </Solution>

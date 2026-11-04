@@ -21,7 +21,7 @@ public class TestFaultInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        if (_httpContextAccessor.HttpContext?.Request.Headers["X-Test-Fault"] == "throw")
+        if (_httpContextAccessor.HttpContext?.Request.Headers["X-Test-Fault"].ToString() == "throw")
         {
             throw new InvalidOperationException("Injected save failure for transaction rollback test.");
         }

@@ -26,15 +26,23 @@ builder.Services.AddSingleton<TestFaultInterceptor>();
 
 builder.Services.AddDbContext<ApplicationDbContext>((services, options) =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
-
-    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(5));
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
     if (builder.Environment.IsEnvironment("Testing"))
     {
+        options.UseSqlite(string.IsNullOrWhiteSpace(connectionString)
+            ? "Data Source=ims-testing.db"
+            : connectionString);
         options.AddInterceptors(services.GetRequiredService<TestFaultInterceptor>());
+        return;
     }
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+    }
+
+    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(5));
 });
 
 builder.Services

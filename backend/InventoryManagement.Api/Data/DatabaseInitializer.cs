@@ -15,17 +15,24 @@ public static class DatabaseInitializer
         var db = services.GetRequiredService<ApplicationDbContext>();
         var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInitializer");
 
-        for (var attempt = 1; attempt <= 20; attempt++)
+        if (db.Database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true)
         {
-            try
+            await db.Database.EnsureCreatedAsync();
+        }
+        else
+        {
+            for (var attempt = 1; attempt <= 20; attempt++)
             {
-                await db.Database.MigrateAsync();
-                break;
-            }
-            catch (Exception ex) when (attempt < 20)
-            {
-                logger.LogWarning(ex, "Database is not ready (attempt {Attempt}/20). Retrying.", attempt);
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                try
+                {
+                    await db.Database.MigrateAsync();
+                    break;
+                }
+                catch (Exception ex) when (attempt < 20)
+                {
+                    logger.LogWarning(ex, "Database is not ready (attempt {Attempt}/20). Retrying.", attempt);
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+                }
             }
         }
 

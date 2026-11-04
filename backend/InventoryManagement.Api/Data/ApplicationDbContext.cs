@@ -20,12 +20,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(modelBuilder);
 
+        var sqlServer = Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer";
+
         modelBuilder.Entity<Category>(entity =>
         {
             entity.Property(c => c.Name)
                 .HasMaxLength(100)
-                .IsRequired()
-                .UseCollation("Latin1_General_CI_AS");
+                .IsRequired();
+            if (sqlServer)
+            {
+                entity.Property(c => c.Name).UseCollation("Latin1_General_CI_AS");
+            }
             entity.Property(c => c.Description).HasMaxLength(500);
             entity.HasIndex(c => c.Name).IsUnique();
         });
@@ -41,10 +46,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.Property(p => p.SKU)
+            var sku = entity.Property(p => p.SKU)
                 .HasMaxLength(50)
-                .IsRequired()
-                .UseCollation("Latin1_General_CI_AS");
+                .IsRequired();
+            if (sqlServer)
+            {
+                sku.UseCollation("Latin1_General_CI_AS");
+            }
             entity.Property(p => p.Name).HasMaxLength(150).IsRequired();
             entity.Property(p => p.Description).HasMaxLength(500);
             entity.Property(p => p.UnitPrice).HasPrecision(18, 2);

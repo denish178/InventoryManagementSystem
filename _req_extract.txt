@@ -1,0 +1,550 @@
+
+===== PAGE 1 =====
+
+Inventory Management System  Requirements v1.1  Page 1
+ INVENTORY
+MANAGEMENT SYSTEM
+ Final Project Requirements & Team Responsibility Plan
+Prepared for: .NET Training Project
+Team size: 3 members | Difficulty: Intermediate | Version: 1.0
+Date: 26 October 2026
+Project objective: Build a reliable inventory application to manage products, categories, suppliers, stock-in/stock-out movements,
+low-stock alerts, inventory reports, and secure role-based access. Every stock movement must be recorded, and stock updates must
+be protected by database transactions.
+
+
+===== PAGE 2 =====
+
+Inventory Management System  Requirements v1.1  Page 2
+Final Project Requirements & Team Responsibility Plan
+Prepared for: .NET Training Project
+Team size: 3 members | Difficulty: Intermediate | Version: 1.0
+Date: 26 October 2026
+ Project objective: Build a reliable inventory application to manage products, categories, suppliers, stock-in/stock-out movements, low-stock
+alerts, and inventory reports. Every stock movement must be recorded, and stock updates must be protected by database transactions.
+1. Project Overview
+The Inventory Management System (IMS) will help a small business maintain accurate product and stock records. Users will manage
+categories and suppliers, create and update products, record stock received or issued, view current stock, identify products at or below
+their reorder level, and review inventory movement reports.
+ Item
+Decision
+Application type
+Web application with an ASP.NET Core Web API backend and a Angular frontend (recommended team baseline).
+Backend
+C#, ASP.NET Core Web API, Entity Framework Core, DTOs, dependency injection, validation, Swagger/OpenAPI.
+Database
+SQL Server with EF Core migrations and relational constraints.
+Frontend
+Angular (TypeScript) using standalone components, Angular Router, Angularive Forms, HttpClient, and a shared
+service layer for API calls.
+Version control
+Git and GitHub; feature branches and pull requests.
+Scope
+Single business/location inventory in Version 1.0; no multi-warehouse, purchase-order workflow, or barcode scanner in
+the initial release.
+2. Goals and Success Criteria
+  Maintain correct product, category, and supplier information.
+  Ensure each SKU is unique and each product references valid category and supplier records.
+  Prevent stock-out transactions from reducing inventory below zero.
+  Record every stock-in and stock-out movement with quantity, type, date, and product.
+  Display low-stock products when current quantity is less than or equal to the reorder level.
+  Produce useful inventory and movement reports with date and product filters.
+  Use a database transaction so a stock movement and its stock balance update either both succeed or both fail.
+ 
+3. User Roles and Permissions
+ Role
+Permissions
+Admin
+Full access to categories, suppliers, products, stock movements, reports, user accounts, and role assignment.
+Inventory Staff
+View categories, suppliers, and products; record stock-in and stock-out; view movement history, low-stock alerts, and
+reports. Cannot manage users/roles or delete master records.
+Viewer
+View products, current stock, low-stock alerts, and reports; cannot change data.
+Authentication is recommended if time permits. If the trainer expects a smaller scope, implement the core inventory workflows first and
+add login/roles as a stretch goal.
+
+
+===== PAGE 3 =====
+
+Inventory Management System  Requirements v1.1  Page 3
+4. Functional Requirements
+ ID / Feature
+Requirement
+FR-01 — Category Management
+Create, list, view, update, and delete categories. Do not allow deletion when products are linked to the category; return
+a clear validation message.
+FR-02 — Supplier Management
+Create, list, view, update, and delete suppliers. Validate required name and valid email format when email is supplied.
+Do not silently delete supplier history or linked products.
+FR-03 — Product Management
+Create, list, view, and update products. Fields: name, SKU, category, supplier, unit price, current quantity, and reorder
+level. SKU must be unique, price/quantity/reorder level cannot be negative, and foreign keys must be valid.
+FR-04 — Product Search and
+Filtering
+Search by name or SKU; filter by category, supplier, and low-stock status. Support pagination/sorting if time permits.
+FR-05 — Stock-In
+Record received stock for a product. Quantity must be greater than zero. Increase current stock and create a
+StockTransaction record atomically.
+FR-06 — Stock-Out
+Record stock issued/sold/removed. Quantity must be greater than zero and cannot exceed available stock. Decrease
+current stock and create a StockTransaction record atomically.
+FR-07 — Transaction History
+Show product movement history with transaction type, quantity, and date, newest first. Allow filtering by product, type,
+and date range.
+FR-08 — Low-Stock Alerts
+Show products where current quantity is less than or equal to ReorderLevel. Make the low-stock state visible in the
+product list and dashboard.
+FR-09 — Inventory Reports
+Provide current-stock report, low-stock report, and stock movement report. Include totals and date/product filters where
+relevant.
+FR-10 — Validation and Errors
+Return consistent HTTP status codes and useful error messages for duplicate SKU, invalid IDs, invalid quantity,
+insufficient stock, and database failures.
+FR-11 — Auditability
+Every stock movement must be recorded. StockTransactions are append-only in Version 1.0; do not edit or delete
+movement history through normal UI.
+FR-12 — API Documentation
+Expose Swagger/OpenAPI documentation for the API and document setup steps in the README.
+FR-13 — Authentication
+User login/logout and identity management
+Use ASP.NET Core Identity for user accounts and password hashing. Provide login and logout/token flow, JWT bearer
+validation, and secure handling of credentials. Do not store plaintext passwords.
+FR-14 — Authorization
+Role-based access control
+Enforce Admin, Inventory Staff, and Viewer permissions on the API. Admin manages users/roles and all modules; Staff
+can perform permitted inventory operations but cannot manage users/roles or delete master data; Viewer has read-only
+access. Unauthorized requests must return 401 or 403 as appropriate.
+5. Business Rules (Must-Have)
+  SKU is required and unique, using a case-insensitive uniqueness policy if feasible. Enforce uniqueness in the database as well as in
+ application validation.
+ Stock quantities and transaction quantities are whole numbers greater than zero. If fractional units are needed, agree on decimal
+ quantities before implementation.
+ Stock-out quantity must never exceed available quantity. A failed stock-out must not create a transaction or change the stock balance.
+  For every successful stock-in, increase Products.Quantity and insert one StockTransactions row in the same database transaction.
+  For every successful stock-out, decrease Products.Quantity and insert one StockTransactions row in the same database transaction.
+  StockTransactions.TransactionType should use a controlled set such as StockIn and StockOut; do not accept arbitrary strings.
+  ReorderLevel cannot be negative. A product is low stock when Quantity <= ReorderLevel.
+  Store transaction timestamps consistently (UTC in the API/database is recommended); display them in the user’s local time in the UI.
+  Use decimal for UnitPrice, never float/double, to avoid monetary precision issues.
+  Master data cannot be hard-deleted if doing so would break product or transaction history. Prefer a clear conflict response or
+ soft-delete strategy.
+
+
+===== PAGE 4 =====
+
+Inventory Management System  Requirements v1.1  Page 4
+6. Database Design
+ Table
+Columns
+Constraints / Notes
+Categories
+CategoryId (PK), Name
+Name required; optionally unique. One category can have many
+products.
+Suppliers
+SupplierId (PK), Name, Phone, Email
+Name required; validate email if provided. One supplier can supply
+many products.
+Products
+ProductId (PK), Name, SKU, CategoryId (FK),
+SupplierId (FK), UnitPrice, Quantity, ReorderLevel
+SKU unique; CategoryId and SupplierId required unless the team
+explicitly allows nullable suppliers; non-negative price/quantity/reorder
+level.
+StockTransactions
+TransactionId (PK), ProductId (FK),
+TransactionType, Quantity, TransactionDate
+Quantity > 0; type constrained to StockIn/StockOut; ProductId FK;
+movement rows retained for audit.
+Design note: the trainer’s brief lists Products.Quantity implicitly as the current stock balance, while StockTransactions records
+movements. Keep both in Version 1.0 for a simple UI, but only change Quantity through the stock-movement service—not through
+ordinary product edit requests. This prevents users from bypassing the transaction history.
+6.1 Relationship Summary
+  Categories (1) → (many) Products
+  Suppliers (1) → (many) Products
+  Products (1) → (many) StockTransactions
+ 
+7. Proposed API Endpoints
+ Area
+Method & Route
+Purpose
+Categories
+GET /api/categories
+List categories
+Categories
+GET /api/categories/{id}
+Get one category
+Categories
+POST /api/categories
+Create category
+Categories
+PUT /api/categories/{id}
+Update category
+Categories
+DELETE /api/categories/{id}
+Delete if not in use
+Suppliers
+GET /api/suppliers
+List suppliers
+Suppliers
+POST /api/suppliers
+Create supplier
+Suppliers
+PUT /api/suppliers/{id}
+Update supplier
+Suppliers
+DELETE /api/suppliers/{id}
+Delete if not in use
+Products
+GET /api/products
+List/search/filter products; optional query params: search, categoryId,
+supplierId, lowStock, page, pageSize
+Products
+GET /api/products/{id}
+Product details
+Products
+POST /api/products
+Create product
+Products
+PUT /api/products/{id}
+Update product master data; do not directly overwrite Quantity
+Stock
+POST /api/stock-transactions/stock-in
+Add stock and record movement
+Stock
+POST /api/stock-transactions/stock-out
+Remove stock and record movement
+Stock
+GET /api/stock-transactions
+List/filter transaction history
+Stock
+GET /api/stock-transactions/{id}
+Get one movement
+Reports
+GET /api/reports/low-stock
+Products at/below reorder level
+Reports
+GET /api/reports/inventory
+Current inventory and stock valuation summary
+Reports
+GET /api/reports/stock-movements
+Movement report filtered by date/product/type
+System
+GET /health
+Simple service health endpoint (optional but recommended)
+Authentication
+POST /api/auth/register
+Create a user account (Admin-only after initial bootstrap, or disabled for
+public registration).
+Authentication
+POST /api/auth/login
+Validate credentials and issue a JWT access token.
+Authentication
+POST /api/auth/refresh (optional)
+Issue a new access token using a secure refresh-token flow if
+implemented.
+Users & Roles
+GET /api/users
+Admin-only: list users.
+Users & Roles
+PUT /api/users/{id}/role
+Admin-only: assign or change a user's role.
+
+
+===== PAGE 5 =====
+
+Inventory Management System  Requirements v1.1  Page 5
+Use request/response DTOs rather than exposing EF Core entities directly. Return 201 Created for successful creates, 400 for
+validation errors, 404 for missing resources, 409 for conflicts such as duplicate SKU or insufficient stock, and 500 only for unexpected
+server errors.
+8. Detailed Team Responsibilities
+The original Task Management System team member names were not available in the project context, so this plan uses Member 1,
+Member 2, and Member 3. Replace these labels with the three team members’ names before submitting the document.
+Responsibilities are divided by ownership, with shared integration and review duties.
+Member 1 — Backend Core, Database & Transaction Integrity
+ Responsibility
+Detailed tasks / deliverables
+Database design
+Create ER diagram; define Categories, Suppliers, Products, and StockTransactions; configure EF Core relationships,
+foreign keys, indexes, decimal precision, and unique SKU constraint.
+Project foundation
+Set up ASP.NET Core Web API project structure, DbContext, dependency injection, configuration, migrations, and
+database seeding for development.
+Category & supplier APIs
+Implement CRUD endpoints, DTOs, validation, service/repository logic where appropriate, and safe delete behavior for
+linked records.
+Product API foundation
+Implement product create/read/update/list endpoints, SKU uniqueness checks, category/supplier validation, search/filter
+support, and prevent ordinary product updates from changing stock quantity.
+Database transaction challenge
+Implement the stock-movement transaction boundary or pair with Member 2 to ensure stock balance updates and
+movement inserts commit/rollback together. Review concurrency risk and avoid read-then-write race conditions.
+Documentation
+Maintain ERD and database setup/migration instructions; review API conventions and error response shape.
+Definition of done: migrations run from a clean database; category, supplier, and product endpoints pass tests; SKU uniqueness is
+enforced at database level; stock quantity cannot be changed through the normal product update endpoint.
+Member 2 — Stock Movement, Reports & Backend Testing
+ Responsibility
+Detailed tasks / deliverables
+Stock-in workflow
+Implement POST stock-in endpoint/service: validate product and positive quantity, increment balance, insert
+StockTransactions row, and commit atomically.
+Stock-out workflow
+Implement POST stock-out endpoint/service: validate positive quantity, ensure sufficient stock, decrement balance,
+insert movement row, and commit atomically.
+Transaction history
+Implement transaction listing/detail endpoints with filters for product, transaction type, and date range; ensure stable
+ordering and pagination if supported.
+Low-stock and reports
+Implement low-stock query (Quantity <= ReorderLevel), current inventory report, stock movement report, totals, and
+filtering.
+Testing
+Write unit/integration tests for stock-in, stock-out, insufficient stock, zero/negative quantity, missing product, duplicate
+SKU integration, transaction rollback, and concurrent stock-out attempts where practical.
+API contracts
+Agree with Member 1 on DTOs, routes, error responses, and transaction service interface; document sample requests
+in Swagger or README.
+Definition of done: a successful movement changes the balance and adds exactly one history row; a failed movement changes neither;
+stock-out can never make stock negative; report totals match seeded/test data.
+Member 3 — Frontend, User Experience & End-to-End Integration
+ Responsibility
+Detailed tasks / deliverables
+Application shell
+Create Angular application using standalone components, Angular Router, a shared layout/navigation shell,
+environment-based API base URL, HttpClient, loading states, and consistent error handling.
+Dashboard
+Build an Angular dashboard with summary cards for total products, low-stock products, and recent movements; show a
+clear low-stock alert list.
+Master-data screens
+Build Angular pages/components for category and supplier list/create/edit screens, plus product list/create/edit/detail
+screens with category/supplier dropdowns and SKU validation feedback. Use Angularive Forms and reusable form
+controls.
+Stock screens
+Build Angular stock-in and stock-out forms using Angularive Forms, positive-quantity validation, available-stock display,
+confirmation/error states, and a transaction-history table with filters.
+Reports
+Build Angular report pages for current inventory, low stock, and stock movements with practical filters and readable
+totals. CSV export can be a stretch goal.
+Integration and UI testing
+Integrate Angular HttpClient services with the agreed API contracts; test happy paths and validation/error cases; verify
+routing, navigation, empty states, form validation, and API failures.
+Delivery quality
+Maintain frontend README steps, Angular environment configuration, screenshots for the final demo, and a concise
+demo script.
+
+
+===== PAGE 6 =====
+
+Inventory Management System  Requirements v1.1  Page 6
+Angular implementation standards
+  Use Angular standalone components and Angular Router; organize the UI by feature rather than placing all screens in one component.
+  Create typed interfaces/models for Category, Supplier, Product, and StockTransaction.
+  Create injectable services such as CategoryService, SupplierService, ProductService, StockService, and ReportService using
+ HttpClient.
+ Use Angularive Forms for create/edit and stock movement forms; show field-level validation messages and disable submission while
+ requests are in progress.
+ Configure the API base URL through Angular environment configuration; do not hardcode localhost URLs throughout components.
+  Use an HTTP interceptor for common error handling/loading or authentication headers if authentication is added.
+  Keep stock balance changes exclusively on the backend stock-in/stock-out endpoints; the Angular UI must not directly edit a product's
+ Quantity field.
+Definition of done: a user can navigate through the Angular dashboard and pages, manage products, record stock-in/stock-out, view
+updated quantities and transaction history, and open reports without manually editing the database.
+8.1 Shared Responsibilities and Ownership Rules
+  All members: pull latest changes daily, use feature branches, create pull requests, review at least one teammate’s change per
+ milestone, and avoid committing secrets or local connection strings.
+ All members: agree on route names, DTO field names, error format, and status codes before parallel implementation begins.
+  Member 1 owns database schema and migration changes. Other members must coordinate schema changes with Member 1 before
+ merging.
+ Member 2 owns stock movement business logic and tests. Member 1 reviews database transaction/concurrency correctness.
+  Member 3 owns frontend integration and reports UI, but report calculations must be returned by the API rather than duplicated
+ inconsistently in the browser.
+ Integration rule: do not wait until the end. Merge a minimal vertical slice (create product → stock-in → stock-out → view history) early.
+ 
+9. Suggested Repository Structure
+ inventory-management/
+■■■ backend/
+■   ■■■ InventoryManagement.Api/
+■       ■■■ Controllers/
+■       ■■■ Data/
+■       ■■■ Entities/
+■       ■■■ DTOs/
+■       ■■■ Services/
+■       ■■■ Validators/
+■       ■■■ Migrations/
+■       ■■■ Program.cs
+■■■ frontend/
+■   ■■■ inventory-management-ui/
+■       ■■■ src/
+■       ■   ■■■ app/
+■       ■   ■   ■■■ core/          # API services, interceptors, guards
+■       ■   ■   ■■■ shared/        # Reusable components and pipes
+■       ■   ■   ■■■ features/      # dashboard, products, categories, suppliers, stock, reports
+■       ■   ■   ■■■ app.routes.ts
+■       ■   ■   ■■■ app.config.ts
+■       ■   ■■■ environments/
+■       ■   ■■■ styles.css
+■       ■■■ README.md
+■■■ docs/
+■   ■■■ requirements.md
+■   ■■■ er-diagram.png
+■   ■■■ api-examples.md
+■■■ tests/
+■■■ README.md
+10. Quality, Security & Technical Standards
+  Use async/await for database and network I/O.
+  Use DTOs and server-side validation; never trust frontend validation alone.
+  Use EF Core migrations for schema changes and keep migrations committed.
+  Keep secrets in User Secrets or environment variables; do not commit credentials.
+  Use dependency injection and keep controller actions thin; place business rules in services.
+  Use structured logging for unexpected errors; do not return stack traces to clients.
+ 
+
+===== PAGE 7 =====
+
+Inventory Management System  Requirements v1.1  Page 7
+ Use cancellation tokens for longer-running API/database operations where practical.
+  Add database indexes for SKU, foreign keys, transaction date, and frequently filtered columns as appropriate.
+  Use a consistent response/error convention and Swagger examples.
+  If authentication is included, protect write endpoints and apply role-based authorization. Never rely on hiding frontend buttons as
+ authorization.
+11. Test Plan and Acceptance Criteria
+ Test ID
+Scenario
+Expected result
+T-01
+Create product with a new SKU and valid
+category/supplier
+Product is created and returned with an ID.
+T-02
+Create another product with the same SKU
+Request is rejected; no duplicate product is stored.
+T-03
+Stock-in quantity 10 for a product with quantity 5
+Quantity becomes 15 and one StockIn row is added.
+T-04
+Stock-out quantity 4 for a product with quantity 15
+Quantity becomes 11 and one StockOut row is added.
+T-05
+Stock-out quantity greater than available quantity
+Request is rejected; balance and transaction history remain unchanged.
+T-06
+Stock-in/out quantity is zero or negative
+Validation error; no database changes.
+T-07
+Attempt stock movement for a nonexistent product
+404 or agreed validation error; no database changes.
+T-08
+Force movement insert/update failure during a stock
+operation
+Transaction rolls back; no partial update remains.
+T-09
+Product quantity equals reorder level
+Product appears in low-stock results.
+T-10
+Delete category/supplier that is still referenced
+Deletion is blocked with a clear message.
+T-11
+Filter movement report by product/date/type
+Only matching movements are returned.
+T-12
+Restart app against a fresh database
+Documented migration and seed steps work reliably.
+12. Delivery Plan and Milestones
+ Milestone
+Work
+Owner(s)
+Exit criteria
+M1 —
+Agree &
+design
+Confirm stack, finalize ERD, API routes, DTOs,
+Git rules, and UI wireframes.
+All; Member 1 coordinates DB/API contract
+Team signs off on schema and contracts.
+M2 —
+Foundation
+Create solution, database, migrations, frontend
+shell, Swagger, shared API client.
+Member 1 + Member 3
+API and UI start locally; database connects.
+M3 —
+Master data
+Category, supplier, product CRUD and
+validation.
+Member 1 + Member 3
+Can create and view valid products from UI.
+M4 —
+Stock
+workflows
+Stock-in/out services, transaction safety,
+movement history.
+Member 2 + Member 1
+Stock changes and history are atomic and
+correct.
+M5 —
+Reports &
+integration
+Low-stock alerts, reports, dashboard, filters,
+end-to-end tests.
+Member 2 + Member 3
+Complete primary user journey works end to
+end.
+M6 —
+Hardening
+& demo
+Fix bugs, run acceptance tests, finalize
+README, ERD, screenshots, demo script.
+All members
+Clean setup succeeds and demo follows
+documented steps.
+Timeline suggestion: plan for 2–3 weeks, adjusting to the trainer’s deadline and each member’s availability. Keep the first working
+end-to-end slice small; add polish only after the core stock rules are proven.
+13. Out of Scope for Version 1.0
+  Multiple warehouses/locations and stock transfers between warehouses.
+  Purchase orders, vendor invoices, billing, and payment processing.
+  Barcode/QR scanning and hardware integrations.
+  Automatic email/SMS alerts; Version 1.0 can show low-stock alerts in the application.
+  Advanced forecasting, AI-based demand prediction, and accounting integration.
+  Mobile native application.
+ 
+13.1 Authentication & Authorization Acceptance Criteria
+  Unauthenticated users cannot call protected inventory endpoints; the API returns 401 Unauthorized.
+ 
+
+===== PAGE 8 =====
+
+Inventory Management System  Requirements v1.1  Page 8
+ Authenticated users without the required role receive 403 Forbidden.
+  Passwords are stored only using ASP.NET Core Identity’s password hashing; plaintext passwords and secrets are never committed.
+  Admin can manage users and roles; Inventory Staff can perform only permitted stock operations; Viewer is read-only.
+  Angular login/logout flows work, protected routes redirect appropriately, and API requests attach the access token using an HTTP
+ interceptor.
+ Backend authorization policies are tested directly; UI hiding and Angular route guards are not treated as security boundaries.
+ 
+14. Final Definition of Done
+  All must-have functional requirements FR-01 through FR-14, including mandatory authentication and authorization are implemented or
+ explicitly marked as deferred with trainer approval.
+ Database schema and migrations are committed; another teammate can set up the application using the README.
+  No duplicate SKU can be persisted, and no stock-out can produce negative stock.
+  Stock movement record and stock balance update succeed or fail together through a database transaction.
+  UI supports category/supplier/product management, stock-in, stock-out, transaction history, low-stock alerts, and reports.
+  Critical acceptance tests pass, Swagger is usable, and the project has no committed secrets.
+  Each team member can explain their own implementation and the overall stock transaction flow during the trainer’s review.
+ 
+Appendix A — Team Member Names
+ Role label
+Team member name
+Primary ownership
+Member 1
+____________________________
+Database, EF Core, master-data APIs, transaction integrity coordination
+Member 2
+____________________________
+Stock-in/out, transaction history, reports, backend tests
+Member 3
+____________________________
+Angular UI, dashboard, forms, reports UI, end-to-end integration
+Before submission, replace Member 1/2/3 with the actual names and confirm the frontend framework and authentication scope with
+the trainer. The responsibilities above are proposed ownership boundaries; all members remain jointly responsible for integration and
+the final demo.
