@@ -2,7 +2,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using InventoryManagement.Api.DTOs;
+using InventoryManagement.Api.DTOs.Users;
 using InventoryManagement.Api.Entities;
+using InventoryManagement.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,21 +13,37 @@ using Microsoft.IdentityModel.Tokens;
 namespace InventoryManagement.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IConfiguration _configuration;
+    private readonly IUserAccountService _users;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IUserAccountService users)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _configuration = configuration;
+        _users = users;
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost("register")]
+    public async Task<ActionResult<UserResponseDto>> Register([FromBody] CreateUserDto request)
+    {
+        var (user, error) = await _users.CreateAsync(request);
+        if (error is not null)
+        {
+            return StatusCode(error.StatusCode, new { message = error.Message, errors = error.Errors });
+        }
+
+        return Created($"/api/users/{user!.Id}", user);
     }
 
     [AllowAnonymous]
@@ -61,15 +79,14 @@ public class AuthController : ControllerBase
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
-            new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Name, user.UserName ?? user.Email ?? user.Id),
-            new(ClaimTypes.Email, user.Email ?? string.Empty),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new("full_name", user.FullName)
         };
 
         foreach (var role in roles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim("role", role));
         }
 
         var keyText = _configuration["Jwt:Key"]
@@ -109,6 +126,10 @@ public class AuthController : ControllerBase
             Roles = roles
         });
     }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public IActionResult Logout() => NoContent();
 
     [Authorize]
     [HttpGet("me")]

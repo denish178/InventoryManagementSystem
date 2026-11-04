@@ -1,6 +1,7 @@
 using InventoryManagement.Api.Data;
 using InventoryManagement.Api.DTOs.Categories;
 using InventoryManagement.Api.Entities;
+using InventoryManagement.Api.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
@@ -8,8 +9,8 @@ using Microsoft.AspNetCore.Authorization;
 namespace InventoryManagement.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Route("api/categories")]
+[Authorize]
 public class CategoriesController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -19,8 +20,8 @@ public class CategoriesController : ControllerBase
         _context = context;
     }
 
-    // GET: api/Categories
     [HttpGet]
+    [Authorize(Roles = "Admin,Inventory Staff,Viewer")]
     public async Task<ActionResult<IEnumerable<CategoryResponseDto>>> GetAll()
     {
         var categories = await _context.Categories
@@ -39,8 +40,8 @@ public class CategoriesController : ControllerBase
         return Ok(categories);
     }
 
-    // GET: api/Categories/1
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "Admin,Inventory Staff,Viewer")]
     public async Task<ActionResult<CategoryResponseDto>> GetById(int id)
     {
         var category = await _context.Categories
@@ -63,13 +64,14 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Category>> Create(
         CreateCategoryDto dto)
     {
         var name = dto.Name.Trim();
 
         var exists = await _context.Categories
-            .AnyAsync(c => c.Name == name);
+            .AnyAsync(c => c.Name.ToLower() == name.ToLower());
 
         if (exists)
             return Conflict(new { message = "Category already exists." });
@@ -77,11 +79,18 @@ public class CategoriesController : ControllerBase
         var category = new Category
         {
             Name = name,
-            Description = dto.Description?.Trim()
+            Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim()
         };
 
         _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (UniqueConstraint.IsViolation(ex))
+        {
+            return Conflict(new { message = "Category already exists." });
+        }
 
         var response = new CategoryResponseDto
         {
@@ -96,6 +105,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(
         int id,
         UpdateCategoryDto dto)
@@ -108,7 +118,7 @@ public class CategoriesController : ControllerBase
         var name = dto.Name.Trim();
 
         var duplicate = await _context.Categories.AnyAsync(
-            c => c.Id != id && c.Name == name);
+            c => c.Id != id && c.Name.ToLower() == name.ToLower());
 
         if (duplicate)
             return Conflict(new { message = "Category already exists." });
@@ -123,6 +133,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var category = await _context.Categories.FindAsync(id);

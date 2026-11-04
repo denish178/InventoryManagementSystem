@@ -1,0 +1,61 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Master data</p>
+      <h1>Categories</h1>
+    </div>
+  </header>
+  @if (error()) { <p class="banner error" role="alert">{{ error() }}</p> }
+
+  <div class="split">
+    @if (auth.canManageMasterData()) {
+      <form class="card form-card" [formGroup]="form" (ngSubmit)="save()">
+        <h2>{{ editingId() ? 'Edit category' : 'New category' }}</h2>
+        <label class="field">
+          <span>Name</span>
+          <input formControlName="name" />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+            <small>Name must be 2–100 characters.</small>
+          }
+        </label>
+        <label class="field">
+          <span>Description</span>
+          <textarea formControlName="description" rows="3"></textarea>
+        </label>
+        @if (editingId()) {
+          <label class="check"><input type="checkbox" formControlName="isActive" /> Active</label>
+        }
+        <div class="row-actions">
+          <button class="btn primary" type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+          @if (editingId()) { <button class="btn ghost" type="button" (click)="cancel()">Cancel</button> }
+        </div>
+      </form>
+    }
+    <section class="card">
+      @if (loading()) {
+        <p class="muted">Loading categories…</p>
+      } @else if (items().length === 0) {
+        <p class="empty">No categories yet.</p>
+      } @else {
+        <table class="table">
+          <thead><tr><th>Name</th><th>Description</th><th>Status</th>@if (auth.canManageMasterData()) { <th></th> }</tr></thead>
+          <tbody>
+            @for (item of items(); track item.id) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.description || '—' }}</td>
+                <td>{{ item.isActive ? 'Active' : 'Inactive' }}</td>
+                @if (auth.canManageMasterData()) {
+                  <td class="row-actions">
+                    <button class="btn ghost" type="button" (click)="edit(item)">Edit</button>
+                    <button class="btn danger" type="button" (click)="remove(item)">Delete</button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  </div>
+</section>

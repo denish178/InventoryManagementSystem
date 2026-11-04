@@ -21,5 +21,7 @@ public class StockTransactionResponseDto
 
     public DateTime CreatedAt { get; set; }
 
+    public DateTime TransactionDate => CreatedAt;
+
     public string? CreatedBy { get; set; }
 }

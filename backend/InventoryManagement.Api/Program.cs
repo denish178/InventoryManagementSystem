@@ -1,92 +1,111 @@
-
-using System.Text;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text.Json.Serialization;
 using InventoryManagement.Api.Data;
 using InventoryManagement.Api.Entities;
+using InventoryManagement.Api.Infrastructure;
+using InventoryManagement.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
-// ASP.NET Core Identity + Roles
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<TestFaultInterceptor>();
+
+builder.Services.AddDbContext<ApplicationDbContext>((services, options) =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+
+    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(5));
+
+    if (builder.Environment.IsEnvironment("Testing"))
+    {
+        options.AddInterceptors(services.GetRequiredService<TestFaultInterceptor>());
+    }
+});
+
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
-
         options.Password.RequiredLength = 8;
         options.Password.RequireDigit = true;
         options.Password.RequireUppercase = true;
         options.Password.RequireLowercase = true;
         options.Password.RequireNonAlphanumeric = true;
-
         options.Lockout.AllowedForNewUsers = true;
         options.Lockout.MaxFailedAccessAttempts = 5;
-        options.Lockout.DefaultLockoutTimeSpan =
-            TimeSpan.FromMinutes(15);
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+        options.ClaimsIdentity.UserIdClaimType = JwtRegisteredClaimNames.Sub;
+        options.ClaimsIdentity.RoleClaimType = "role";
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-// JWT settings
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("JWT key is not configured.");
-
 var jwtIssuer = builder.Configuration["Jwt:Issuer"]
     ?? throw new InvalidOperationException("JWT issuer is not configured.");
-
 var jwtAudience = builder.Configuration["Jwt:Audience"]
     ?? throw new InvalidOperationException("JWT audience is not configured.");
 
 builder.Services
     .AddAuthentication(options =>
     {
-        options.DefaultAuthenticateScheme =
-            JwtBearerDefaults.AuthenticationScheme;
-
-        options.DefaultChallengeScheme =
-            JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     })
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidIssuer = jwtIssuer,
-
             ValidateAudience = true,
             ValidAudience = jwtAudience,
-
             ValidateLifetime = true,
-
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Convert.FromBase64String(jwtKey)),
-
-            ClockSkew = TimeSpan.FromMinutes(1)
+            IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(jwtKey)),
+            ClockSkew = TimeSpan.FromMinutes(1),
+            NameClaimType = JwtRegisteredClaimNames.Sub,
+            RoleClaimType = "role"
         };
     });
 
-// Controllers + JSON
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
+builder.Services.AddScoped<IStockMovementService, StockMovementService>();
+builder.Services.AddScoped<IUserAccountService, UserAccountService>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler =
-            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter());
     });
 
-
-
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.OpenApiSecurityScheme
@@ -96,7 +115,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = Microsoft.OpenApi.ParameterLocation.Header,
-        Description = "Enter your JWT access token."
+        Description = "Enter the JWT access token."
     });
 
     options.AddSecurityRequirement(document =>
@@ -106,114 +125,53 @@ builder.Services.AddSwaggerGen(options =>
         });
 });
 
-
+var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
+    ?? ["http://localhost:4200"];
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ui", policy =>
+        policy.WithOrigins(corsOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
 
 var app = builder.Build();
 
+await DatabaseInitializer.InitializeAsync(app);
 
-using (var scope = app.Services.CreateScope())
+app.UseForwardedHeaders();
+app.UseExceptionHandler(handler =>
 {
-    var services = scope.ServiceProvider;
-    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-    var configuration = services.GetRequiredService<IConfiguration>();
-
-    string[] roles = { "Admin", "Inventory Staff", "Viewer" };
-
-    foreach (var role in roles)
+    handler.Run(async context =>
     {
-        if (!await roleManager.RoleExistsAsync(role))
+        var feature = context.Features.Get<IExceptionHandlerFeature>();
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Unhandled");
+        logger.LogError(feature?.Error, "Unhandled API exception");
+
+        context.Response.ContentType = "application/json";
+        if (feature?.Error is DbUpdateException dbUpdate && UniqueConstraint.IsViolation(dbUpdate))
         {
-            var result = await roleManager.CreateAsync(new IdentityRole(role));
-
-            if (!result.Succeeded)
-            {
-                throw new InvalidOperationException(
-                    string.Join(", ", result.Errors.Select(e => e.Description)));
-            }
-        }
-    }
-
-    var email = configuration["AdminSeed:Email"]
-        ?? throw new InvalidOperationException("AdminSeed:Email is missing.");
-    var password = configuration["AdminSeed:Password"]
-        ?? throw new InvalidOperationException("AdminSeed:Password is missing.");
-    var fullName = configuration["AdminSeed:FullName"]
-        ?? throw new InvalidOperationException("AdminSeed:FullName is missing.");
-
-    var admin = await userManager.FindByEmailAsync(email);
-
-    if (admin is null)
-    {
-        admin = new ApplicationUser
-        {
-            UserName = email,
-            Email = email,
-            FullName = fullName,
-            IsActive = true,
-            EmailConfirmed = true
-        };
-
-        var createResult = await userManager.CreateAsync(admin, password);
-
-        if (!createResult.Succeeded)
-        {
-            throw new InvalidOperationException(
-                "Admin creation failed: " +
-                string.Join(", ", createResult.Errors.Select(e => e.Description)));
-        }
-    }
-
-    if (!await userManager.IsInRoleAsync(admin, "Admin"))
-    {
-        var roleResult = await userManager.AddToRoleAsync(admin, "Admin");
-
-        if (!roleResult.Succeeded)
-        {
-            throw new InvalidOperationException(
-                "Admin role assignment failed: " +
-                string.Join(", ", roleResult.Errors.Select(e => e.Description)));
-        }
-    }
-
-    if (configuration.GetValue<bool>("AdminSeed:ResetPassword"))
-    {
-        var token = await userManager.GeneratePasswordResetTokenAsync(admin);
-        var resetResult = await userManager.ResetPasswordAsync(admin, token, password);
-
-        if (!resetResult.Succeeded)
-        {
-            throw new InvalidOperationException(
-                "Admin password reset failed: " +
-                string.Join(", ", resetResult.Errors.Select(e => e.Description)));
+            context.Response.StatusCode = StatusCodes.Status409Conflict;
+            await context.Response.WriteAsJsonAsync(new { message = "The record conflicts with an existing unique value." });
+            return;
         }
 
-        admin.FullName = fullName;
-        admin.IsActive = true;
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await context.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
+    });
+});
 
-        var updateResult = await userManager.UpdateAsync(admin);
-
-        if (!updateResult.Succeeded)
-        {
-            throw new InvalidOperationException(
-                "Admin update failed: " +
-                string.Join(", ", updateResult.Errors.Select(e => e.Description)));
-        }
-    }
-}
-
-
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
+app.UseCors("ui");
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
+
+public partial class Program;

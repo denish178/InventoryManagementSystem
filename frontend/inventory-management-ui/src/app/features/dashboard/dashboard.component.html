@@ -1,0 +1,88 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Today</p>
+      <h1>Dashboard</h1>
+    </div>
+    <a class="btn primary" routerLink="/stock">Record movement</a>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading the stockroom…</p>
+  } @else if (error()) {
+    <p class="banner error" role="alert">{{ error() }}</p>
+  } @else if (summary(); as data) {
+    <div class="stat-grid">
+      <article class="stat">
+        <span>Active products</span>
+        <strong>{{ data.totalProducts }}</strong>
+      </article>
+      <article class="stat warn">
+        <span>Low stock</span>
+        <strong>{{ data.lowStockProducts }}</strong>
+      </article>
+      <article class="stat">
+        <span>Units on hand</span>
+        <strong>{{ data.totalUnitsInStock }}</strong>
+      </article>
+      <article class="stat">
+        <span>Inventory value</span>
+        <strong>{{ money(data.inventoryValue) }}</strong>
+      </article>
+    </div>
+
+    <div class="split">
+      <section class="card">
+        <header class="card-head">
+          <h2>Needs reorder</h2>
+          <a routerLink="/reports">Open report</a>
+        </header>
+        @if (data.lowStock.length === 0) {
+          <p class="empty">Nothing is at or below its reorder level.</p>
+        } @else {
+          <table class="table">
+            <thead>
+              <tr><th>SKU</th><th>Product</th><th>On hand</th><th>Reorder</th></tr>
+            </thead>
+            <tbody>
+              @for (item of data.lowStock; track item.id) {
+                <tr>
+                  <td>{{ item.sku }}</td>
+                  <td>{{ item.name }}</td>
+                  <td><span class="badge low">{{ item.quantityInStock }}</span></td>
+                  <td>{{ item.reorderLevel }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+
+      <section class="card">
+        <header class="card-head">
+          <h2>Recent movements</h2>
+          <a routerLink="/stock">History</a>
+        </header>
+        @if (data.recentMovements.length === 0) {
+          <p class="empty">No stock movements yet.</p>
+        } @else {
+          <table class="table">
+            <thead>
+              <tr><th>When</th><th>Product</th><th>Type</th><th>Qty</th></tr>
+            </thead>
+            <tbody>
+              @for (item of data.recentMovements; track item.id) {
+                <tr>
+                  <td>{{ localDate(item.createdAt) }}</td>
+                  <td>{{ item.productName }}</td>
+                  <td><span class="badge" [class.in]="item.transactionType === 'StockIn'" [class.out]="item.transactionType === 'StockOut'">{{ item.transactionType === 'StockIn' ? 'In' : 'Out' }}</span></td>
+                  <td>{{ item.quantity }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+    </div>
+  }
+</section>

@@ -1,0 +1,57 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Master data</p>
+      <h1>Suppliers</h1>
+    </div>
+  </header>
+  @if (error()) { <p class="banner error" role="alert">{{ error() }}</p> }
+  <div class="split">
+    @if (auth.canManageMasterData()) {
+      <form class="card form-card" [formGroup]="form" (ngSubmit)="save()">
+        <h2>{{ editingId() ? 'Edit supplier' : 'New supplier' }}</h2>
+        <label class="field"><span>Name</span><input formControlName="name" />
+          @if (form.controls.name.touched && form.controls.name.invalid) { <small>Name must be 2–100 characters.</small> }
+        </label>
+        <label class="field"><span>Contact</span><input formControlName="contactPerson" /></label>
+        <label class="field"><span>Email</span><input type="email" formControlName="email" />
+          @if (form.controls.email.touched && form.controls.email.invalid) { <small>Enter a valid email, or leave it blank.</small> }
+        </label>
+        <label class="field"><span>Phone</span><input formControlName="phone" /></label>
+        <label class="field"><span>Address</span><textarea formControlName="address" rows="2"></textarea></label>
+        @if (editingId()) { <label class="check"><input type="checkbox" formControlName="isActive" /> Active</label> }
+        <div class="row-actions">
+          <button class="btn primary" type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+          @if (editingId()) { <button class="btn ghost" type="button" (click)="cancel()">Cancel</button> }
+        </div>
+      </form>
+    }
+    <section class="card">
+      @if (loading()) {
+        <p class="muted">Loading suppliers…</p>
+      } @else if (items().length === 0) {
+        <p class="empty">No suppliers yet.</p>
+      } @else {
+        <table class="table">
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th>@if (auth.canManageMasterData()) { <th></th> }</tr></thead>
+          <tbody>
+            @for (item of items(); track item.id) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.email || '—' }}</td>
+                <td>{{ item.phone || '—' }}</td>
+                <td>{{ item.isActive ? 'Active' : 'Inactive' }}</td>
+                @if (auth.canManageMasterData()) {
+                  <td class="row-actions">
+                    <button class="btn ghost" type="button" (click)="edit(item)">Edit</button>
+                    <button class="btn danger" type="button" (click)="remove(item)">Delete</button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  </div>
+</section>
