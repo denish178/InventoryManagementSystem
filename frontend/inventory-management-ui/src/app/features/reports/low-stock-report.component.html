@@ -1,0 +1,47 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Reports</p>
+      <h1>Low stock report</h1>
+    </div>
+  </header>
+  @if (loading()) {
+    <p class="muted">Checking reorder levels…</p>
+  } @else if (error()) {
+    <p class="banner error" role="alert">{{ error() }}</p>
+  } @else if (report(); as data) {
+    <div class="stat-grid">
+      <article class="stat warn"><span>At or below reorder level</span><strong>{{ data.totalLowStockProducts }}</strong></article>
+    </div>
+    <section class="card">
+      @if (data.products.length === 0) {
+        <p class="empty">Every active product is above its reorder level.</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>SKU</th><th>Product</th><th>Category</th><th>Supplier</th>
+                <th>On hand</th><th>Reorder</th><th>Unit price</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of data.products; track item.id) {
+                <tr>
+                  <td>{{ item.sku }}</td>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.categoryName }}</td>
+                  <td>{{ item.supplierName }}</td>
+                  <td><span class="badge low">{{ item.quantityInStock }}</span></td>
+                  <td>{{ item.reorderLevel }}</td>
+                  <td>{{ money(item.unitPrice) }}</td>
+                  <td>{{ item.stockStatus }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</section>

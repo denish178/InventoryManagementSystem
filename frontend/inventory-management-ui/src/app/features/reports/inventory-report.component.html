@@ -1,0 +1,65 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Reports</p>
+      <h1>Inventory report</h1>
+    </div>
+  </header>
+  @if (error()) { <p class="banner error" role="alert">{{ error() }}</p> }
+  <form class="card filters" [formGroup]="filters" (ngSubmit)="load()">
+    <label class="field"><span>Search</span><input formControlName="search" /></label>
+    <label class="field">
+      <span>Category</span>
+      <select formControlName="categoryId">
+        <option value="">All</option>
+        @for (item of categories(); track item.id) { <option [value]="item.id">{{ item.name }}</option> }
+      </select>
+    </label>
+    <label class="field">
+      <span>Supplier</span>
+      <select formControlName="supplierId">
+        <option value="">All</option>
+        @for (item of suppliers(); track item.id) { <option [value]="item.id">{{ item.name }}</option> }
+      </select>
+    </label>
+    <button class="btn primary" type="submit">Apply</button>
+  </form>
+  @if (loading()) {
+    <p class="muted">Calculating inventory…</p>
+  } @else if (report(); as data) {
+    <div class="stat-grid">
+      <article class="stat"><span>Products</span><strong>{{ data.totalProducts }}</strong></article>
+      <article class="stat"><span>Units</span><strong>{{ data.totalUnits }}</strong></article>
+      <article class="stat"><span>Total valuation</span><strong>{{ money(data.inventoryValue) }}</strong></article>
+    </div>
+    <section class="card">
+      @if (data.products.length === 0) {
+        <p class="empty">No active products match this report.</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>SKU</th><th>Product</th><th>Category</th><th>Supplier</th>
+                <th>Qty</th><th>Unit price</th><th>Valuation</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of data.products; track item.id) {
+                <tr>
+                  <td>{{ item.sku }}</td>
+                  <td>{{ item.name }} @if (item.isLowStock) { <span class="badge low">Low</span> }</td>
+                  <td>{{ item.categoryName }}</td>
+                  <td>{{ item.supplierName }}</td>
+                  <td>{{ item.quantityInStock }}</td>
+                  <td>{{ money(item.unitPrice) }}</td>
+                  <td>{{ money(item.stockValue) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</section>

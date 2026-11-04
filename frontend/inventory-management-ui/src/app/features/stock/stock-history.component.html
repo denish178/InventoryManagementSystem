@@ -1,0 +1,83 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Stock</p>
+      <h1>Transaction history</h1>
+    </div>
+  </header>
+
+  @if (error()) { <p class="banner error" role="alert">{{ error() }}</p> }
+
+  <form class="card filters" [formGroup]="filters" (ngSubmit)="load()">
+    <label class="field">
+      <span>Product</span>
+      <select formControlName="productId">
+        <option value="">All products</option>
+        @for (item of products(); track item.id) {
+          <option [value]="item.id">{{ item.sku }} — {{ item.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span>Type</span>
+      <select formControlName="transactionType">
+        <option value="">All types</option>
+        <option value="StockIn">Stock in</option>
+        <option value="StockOut">Stock out</option>
+      </select>
+    </label>
+    <label class="field"><span>From</span><input type="date" formControlName="startDate" /></label>
+    <label class="field"><span>To</span><input type="date" formControlName="endDate" /></label>
+    <button class="btn primary" type="submit">Apply</button>
+  </form>
+
+  <section class="card">
+    @if (loading()) {
+      <p class="muted">Loading movements…</p>
+    } @else if (rows().length === 0) {
+      <p class="empty">No stock movements match these filters.</p>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Product</th>
+              <th>SKU</th>
+              <th>Type</th>
+              <th>Qty</th>
+              <th>Reference</th>
+              <th>Notes</th>
+              <th>Created by</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of visible(); track item.id) {
+              <tr>
+                <td>{{ localDate(item.createdAt) }}</td>
+                <td><a [routerLink]="['/products', item.productId]">{{ item.productName }}</a></td>
+                <td>{{ item.sku }}</td>
+                <td>
+                  <span class="badge" [class.in]="item.transactionType === 'StockIn'" [class.out]="item.transactionType === 'StockOut'">
+                    {{ item.transactionType === 'StockIn' ? 'In' : 'Out' }}
+                  </span>
+                </td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.referenceNumber || '—' }}</td>
+                <td>{{ item.notes || '—' }}</td>
+                <td>{{ item.createdBy || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span class="muted">{{ rows().length }} movements · page {{ page() }} of {{ pageCount() }}</span>
+        <div class="row-actions">
+          <button class="btn ghost" type="button" (click)="previous()" [disabled]="page() <= 1">Previous</button>
+          <button class="btn ghost" type="button" (click)="next()" [disabled]="page() >= pageCount()">Next</button>
+        </div>
+      </div>
+    }
+  </section>
+</section>

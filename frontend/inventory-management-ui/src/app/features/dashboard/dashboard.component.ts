@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../core/auth.service';
 import { DashboardSummary } from '../../core/models';
 import { ReportService } from '../../core/report.service';
 import { localDate, money, readError } from '../../core/format';
@@ -10,6 +11,7 @@ import { localDate, money, readError } from '../../core/format';
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
+  readonly auth = inject(AuthService);
   private readonly reports = inject(ReportService);
   readonly loading = signal(true);
   readonly error = signal('');

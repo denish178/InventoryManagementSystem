@@ -10,7 +10,7 @@ export function readError(error: unknown): string {
   }
 
   const body = error.error as
-    | { message?: string; title?: string; errors?: Record<string, string[]> }
+    | { message?: string; title?: string; errors?: Record<string, string[]> | string[] }
     | string
     | null;
 
@@ -20,7 +20,10 @@ export function readError(error: unknown): string {
 
   if (body && typeof body === 'object') {
     if (body.message) return body.message;
-    if (body.errors) {
+    if (Array.isArray(body.errors) && body.errors.length) {
+      return String(body.errors[0]);
+    }
+    if (body.errors && !Array.isArray(body.errors)) {
       const first = Object.values(body.errors).find((messages) => messages?.length);
       if (first?.[0]) return first[0];
     }

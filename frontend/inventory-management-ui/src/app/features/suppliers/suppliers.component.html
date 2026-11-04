@@ -17,7 +17,9 @@
         <label class="field"><span>Email</span><input type="email" formControlName="email" />
           @if (form.controls.email.touched && form.controls.email.invalid) { <small>Enter a valid email, or leave it blank.</small> }
         </label>
-        <label class="field"><span>Phone</span><input formControlName="phone" /></label>
+        <label class="field"><span>Phone</span><input formControlName="phone" inputmode="tel" />
+          @if (form.controls.phone.touched && form.controls.phone.invalid) { <small>Use 7–20 digits, with optional +, spaces, or dashes. Leave blank if unknown.</small> }
+        </label>
         <label class="field"><span>Address</span><textarea formControlName="address" rows="2"></textarea></label>
         @if (editingId()) { <label class="check"><input type="checkbox" formControlName="isActive" /> Active</label> }
         <div class="row-actions">

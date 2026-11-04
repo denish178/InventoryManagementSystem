@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -26,10 +26,12 @@ export class AuthService {
   }
 
   logout(): void {
-    if (!this.session()) return;
-    this.http.post(`${environment.apiUrl}/api/auth/logout`, {}).subscribe({
-      next: () => this.clearLocal(),
-      error: () => this.clearLocal(),
+    const token = this.session()?.token;
+    this.clear();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.post(`${environment.apiUrl}/api/auth/logout`, {}, { headers }).subscribe({
+      error: () => undefined,
     });
   }
 

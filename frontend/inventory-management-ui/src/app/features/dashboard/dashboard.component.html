@@ -4,7 +4,9 @@
       <p class="eyebrow">Today</p>
       <h1>Dashboard</h1>
     </div>
-    <a class="btn primary" routerLink="/stock">Record movement</a>
+    @if (auth.canMoveStock()) {
+      <a class="btn primary" routerLink="/stock/in">Record stock in</a>
+    }
   </header>
 
   @if (loading()) {
@@ -35,7 +37,7 @@
       <section class="card">
         <header class="card-head">
           <h2>Needs reorder</h2>
-          <a routerLink="/reports">Open report</a>
+          <a routerLink="/reports/low-stock">Open report</a>
         </header>
         @if (data.lowStock.length === 0) {
           <p class="empty">Nothing is at or below its reorder level.</p>
@@ -61,7 +63,7 @@
       <section class="card">
         <header class="card-head">
           <h2>Recent movements</h2>
-          <a routerLink="/stock">History</a>
+          <a routerLink="/stock/history">History</a>
         </header>
         @if (data.recentMovements.length === 0) {
           <p class="empty">No stock movements yet.</p>

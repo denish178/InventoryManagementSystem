@@ -1,0 +1,60 @@
+<section class="page narrow">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Stock</p>
+      <h1>{{ mode === 'in' ? 'Stock in' : 'Stock out' }}</h1>
+    </div>
+    <a class="btn ghost" routerLink="/stock/history">History</a>
+  </header>
+
+  @if (error()) { <p class="banner error" role="alert">{{ error() }}</p> }
+
+  @if (loading()) {
+    <p class="muted">Loading products…</p>
+  } @else if (products().length === 0) {
+    <p class="empty">Create an active product before recording stock.</p>
+  } @else {
+    <form class="card form-card" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="field">
+        <span>Product</span>
+        <select formControlName="productId">
+          <option value="">Select a product</option>
+          @for (item of products(); track item.id) {
+            <option [value]="item.id">{{ item.sku }} — {{ item.name }}</option>
+          }
+        </select>
+        @if (form.controls.productId.touched && form.controls.productId.invalid) { <small>Choose a product.</small> }
+      </label>
+      @if (selected(); as item) {
+        <p class="stock-callout" [class.warn]="mode === 'out' && item.quantityInStock <= item.reorderLevel">
+          {{ mode === 'in' ? 'Current stock' : 'Available stock' }}:
+          <strong>{{ item.quantityInStock }}</strong>
+          <span class="muted">Reorder level {{ item.reorderLevel }}</span>
+        </p>
+      }
+      <label class="field">
+        <span>Quantity</span>
+        <input type="number" min="1" step="1" formControlName="quantity" />
+        @if (form.controls.quantity.touched && form.controls.quantity.invalid) {
+          <small>Enter a whole number greater than zero.</small>
+        }
+        @if (exceedsStock()) {
+          <small>Quantity cannot exceed available stock of {{ selected()?.quantityInStock }}.</small>
+        }
+      </label>
+      <label class="field">
+        <span>Reference number</span>
+        <input formControlName="referenceNumber" maxlength="100" />
+      </label>
+      <label class="field">
+        <span>Notes</span>
+        <textarea formControlName="notes" rows="3" maxlength="500"></textarea>
+      </label>
+      <div class="row-actions">
+        <button class="btn primary" type="submit" [disabled]="saving() || exceedsStock()">
+          {{ saving() ? 'Saving…' : (mode === 'in' ? 'Receive stock' : 'Issue stock') }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

@@ -1,0 +1,99 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Master data</p>
+      <h1>Products</h1>
+    </div>
+    @if (auth.canManageMasterData()) {
+      <a class="btn primary" routerLink="/products/new">New product</a>
+    }
+  </header>
+
+  @if (error()) { <p class="banner error" role="alert">{{ error() }}</p> }
+
+  <form class="card filters" [formGroup]="filters" (ngSubmit)="search()">
+    <label class="field">
+      <span>Search name or SKU</span>
+      <input formControlName="search" />
+    </label>
+    <label class="field">
+      <span>Category</span>
+      <select formControlName="categoryId">
+        <option value="">All categories</option>
+        @for (item of categories(); track item.id) {
+          <option [value]="item.id">{{ item.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span>Supplier</span>
+      <select formControlName="supplierId">
+        <option value="">All suppliers</option>
+        @for (item of suppliers(); track item.id) {
+          <option [value]="item.id">{{ item.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" formControlName="lowStock" /> Low stock only</label>
+    <button class="btn primary" type="submit">Apply</button>
+  </form>
+
+  <section class="card">
+    @if (loading()) {
+      <p class="muted">Loading products…</p>
+    } @else if (items().length === 0) {
+      <p class="empty">No products match these filters.</p>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th><button type="button" class="sort" (click)="toggleSort('sku')">SKU</button></th>
+              <th><button type="button" class="sort" (click)="toggleSort('name')">Name</button></th>
+              <th>Category</th>
+              <th>Supplier</th>
+              <th><button type="button" class="sort" (click)="toggleSort('quantity')">On hand</button></th>
+              <th>Reorder</th>
+              <th><button type="button" class="sort" (click)="toggleSort('price')">Unit price</button></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items(); track item.id) {
+              <tr>
+                <td>{{ item.sku }}</td>
+                <td>
+                  <a [routerLink]="['/products', item.id]">{{ item.name }}</a>
+                  @if (!item.isActive) { <span class="badge">Inactive</span> }
+                </td>
+                <td>{{ item.categoryName }}</td>
+                <td>{{ item.supplierName }}</td>
+                <td>
+                  <span class="badge" [class.low]="isLowStock(item.quantityInStock, item.reorderLevel)">
+                    {{ item.quantityInStock }}
+                  </span>
+                </td>
+                <td>{{ item.reorderLevel }}</td>
+                <td>{{ money(item.unitPrice) }}</td>
+                <td class="row-actions">
+                  <a class="btn ghost" [routerLink]="['/products', item.id]">View</a>
+                  @if (auth.canManageMasterData()) {
+                    <a class="btn ghost" [routerLink]="['/products', item.id, 'edit']">Edit</a>
+                    <button class="btn danger" type="button" (click)="remove(item)">Delete</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span class="muted">{{ total() }} products · page {{ page() }} of {{ totalPages }}</span>
+        <div class="row-actions">
+          <button class="btn ghost" type="button" (click)="previous()" [disabled]="page() <= 1">Previous</button>
+          <button class="btn ghost" type="button" (click)="next()" [disabled]="page() >= totalPages">Next</button>
+        </div>
+      </div>
+    }
+  </section>
+</section>

@@ -1,0 +1,74 @@
+<section class="page narrow">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Master data</p>
+      <h1>{{ productId() ? 'Edit product' : 'New product' }}</h1>
+    </div>
+    <a class="btn ghost" routerLink="/products">Back</a>
+  </header>
+
+  @if (error()) { <p class="banner error" role="alert">{{ error() }}</p> }
+
+  @if (loading()) {
+    <p class="muted">Loading product…</p>
+  } @else {
+    <form class="card form-card" [formGroup]="form" (ngSubmit)="save()">
+      <p class="muted">Stock quantity is changed only through stock in and stock out.</p>
+      @if (currentStock() !== null) {
+        <p>Current stock: <strong>{{ currentStock() }}</strong></p>
+      }
+      <label class="field">
+        <span>SKU</span>
+        <input formControlName="sku" autocomplete="off" />
+        @if (form.controls.sku.touched && form.controls.sku.invalid) { <small>SKU must be 2–50 characters and unique.</small> }
+      </label>
+      <label class="field">
+        <span>Name</span>
+        <input formControlName="name" />
+        @if (form.controls.name.touched && form.controls.name.invalid) { <small>Name must be 2–150 characters.</small> }
+      </label>
+      <label class="field">
+        <span>Description</span>
+        <textarea formControlName="description" rows="3"></textarea>
+      </label>
+      <div class="pair">
+        <label class="field">
+          <span>Unit price</span>
+          <input type="number" min="0" step="0.01" formControlName="unitPrice" />
+          @if (form.controls.unitPrice.touched && form.controls.unitPrice.invalid) { <small>Price cannot be negative.</small> }
+        </label>
+        <label class="field">
+          <span>Reorder level</span>
+          <input type="number" min="0" step="1" formControlName="reorderLevel" />
+          @if (form.controls.reorderLevel.touched && form.controls.reorderLevel.invalid) { <small>Reorder level cannot be negative.</small> }
+        </label>
+      </div>
+      <label class="field">
+        <span>Category</span>
+        <select formControlName="categoryId">
+          <option value="">Select a category</option>
+          @for (item of categories(); track item.id) {
+            <option [value]="item.id">{{ item.name }}{{ item.isActive ? '' : ' (inactive)' }}</option>
+          }
+        </select>
+        @if (form.controls.categoryId.touched && form.controls.categoryId.invalid) { <small>Choose a category.</small> }
+      </label>
+      <label class="field">
+        <span>Supplier</span>
+        <select formControlName="supplierId">
+          <option value="">Select a supplier</option>
+          @for (item of suppliers(); track item.id) {
+            <option [value]="item.id">{{ item.name }}{{ item.isActive ? '' : ' (inactive)' }}</option>
+          }
+        </select>
+        @if (form.controls.supplierId.touched && form.controls.supplierId.invalid) { <small>Choose a supplier.</small> }
+      </label>
+      @if (productId()) {
+        <label class="check"><input type="checkbox" formControlName="isActive" /> Active</label>
+      }
+      <div class="row-actions">
+        <button class="btn primary" type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save product' }}</button>
+      </div>
+    </form>
+  }
+</section>

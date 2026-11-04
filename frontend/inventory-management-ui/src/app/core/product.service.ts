@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { EMPTY, Observable, expand, reduce } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Paged, Product } from './models';
 
@@ -42,6 +42,18 @@ export class ProductService {
     if (query.sort) params = params.set('sort', query.sort);
     if (query.direction) params = params.set('direction', query.direction);
     return this.http.get<Paged<Product>>(this.base, { params });
+  }
+
+  listAll(): Observable<Product[]> {
+    const pageSize = 100;
+    return this.list({ page: 1, pageSize, sort: 'name', direction: 'asc' }).pipe(
+      expand((page) => {
+        const loaded = page.page * page.pageSize;
+        if (loaded >= page.totalCount) return EMPTY;
+        return this.list({ page: page.page + 1, pageSize, sort: 'name', direction: 'asc' });
+      }),
+      reduce((all, page) => all.concat(page.items), [] as Product[]),
+    );
   }
 
   get(id: number): Observable<Product> {

@@ -1,8 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { readError } from '../../core/format';
 import { Supplier } from '../../core/models';
+import { NoticeService } from '../../core/notice.service';
 import { SupplierService } from '../../core/supplier.service';
 
 @Component({
@@ -13,6 +15,8 @@ import { SupplierService } from '../../core/supplier.service';
 export class SuppliersComponent {
   readonly auth = inject(AuthService);
   private readonly api = inject(SupplierService);
+  private readonly confirm = inject(ConfirmService);
+  private readonly notice = inject(NoticeService);
   private readonly formBuilder = inject(FormBuilder);
 
   readonly items = signal<Supplier[]>([]);
@@ -24,7 +28,7 @@ export class SuppliersComponent {
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     contactPerson: ['', Validators.maxLength(100)],
     email: ['', Validators.email],
-    phone: ['', Validators.maxLength(20)],
+    phone: ['', [Validators.maxLength(20), Validators.pattern(/^[+0-9][0-9\s().-]{6,19}$/)]],
     address: ['', Validators.maxLength(300)],
     isActive: true,
   });
@@ -86,6 +90,7 @@ export class SuppliersComponent {
     request.subscribe({
       next: () => {
         this.saving.set(false);
+        this.notice.show(this.editingId() ? 'Supplier updated.' : 'Supplier created.');
         this.cancel();
         this.load();
       },
@@ -96,10 +101,14 @@ export class SuppliersComponent {
     });
   }
 
-  remove(item: Supplier): void {
-    if (!confirm(`Delete supplier “${item.name}”?`)) return;
+  async remove(item: Supplier): Promise<void> {
+    const ok = await this.confirm.ask('Delete supplier', `Delete “${item.name}”? Products that use it will block this.`);
+    if (!ok) return;
     this.api.delete(item.id).subscribe({
-      next: () => this.load(),
+      next: () => {
+        this.notice.show('Supplier deleted.');
+        this.load();
+      },
       error: (err: unknown) => this.error.set(readError(err)),
     });
   }

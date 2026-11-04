@@ -1,28 +1,59 @@
 <div class="shell">
-  <aside class="sidebar">
+  <aside class="sidebar" [class.open]="menuOpen()">
     <div class="brand">
       <span class="mark">IMS</span>
       <div>
-        <strong>Stockroom</strong>
+        <strong>Inventory</strong>
         <small>Single location</small>
       </div>
     </div>
     <nav>
-      @for (link of links(); track link.path) {
-        <a [routerLink]="link.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: link.exact }">
-          {{ link.label }}
-        </a>
+      @for (group of groups(); track group.label) {
+        <p class="nav-label">{{ group.label }}</p>
+        @for (link of group.items; track link.path) {
+          <a
+            [routerLink]="link.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: link.exact }"
+            (click)="closeMenu()"
+          >
+            {{ link.label }}
+          </a>
+        }
       }
     </nav>
   </aside>
+  @if (menuOpen()) {
+    <button class="scrim" type="button" aria-label="Close menu" (click)="closeMenu()"></button>
+  }
   <div class="workspace">
     <header class="topbar">
-      <div>
+      <button class="btn ghost nav-toggle" type="button" (click)="menuOpen.set(!menuOpen())">Menu</button>
+      <div class="who">
         <strong>{{ auth.session()?.fullName }}</strong>
-        <span class="muted">{{ auth.session()?.roles?.join(', ') }}</span>
+        <span class="muted">{{ auth.session()?.email }} · {{ auth.session()?.roles?.join(', ') }}</span>
       </div>
       <button class="btn ghost" type="button" (click)="logout()">Log out</button>
     </header>
+    @if (notice.message()) {
+      <p class="banner toast" [class.ok]="notice.kind() === 'ok'" [class.error]="notice.kind() === 'error'" role="status">
+        {{ notice.message() }}
+        <button type="button" class="linkish" (click)="notice.clear()">Dismiss</button>
+      </p>
+    }
     <router-outlet />
   </div>
 </div>
+
+@if (confirm.open()) {
+  <div class="modal-backdrop" role="presentation">
+    <div class="modal" role="dialog" aria-modal="true" [attr.aria-label]="confirm.title()">
+      <h2>{{ confirm.title() }}</h2>
+      <p>{{ confirm.message() }}</p>
+      <div class="row-actions">
+        <button class="btn ghost" type="button" (click)="confirm.respond(false)">Cancel</button>
+        <button class="btn danger" type="button" (click)="confirm.respond(true)">Confirm</button>
+      </div>
+    </div>
+  </div>
+}

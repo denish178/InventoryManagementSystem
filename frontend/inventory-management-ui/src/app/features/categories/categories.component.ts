@@ -2,8 +2,10 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
 import { CategoryService } from '../../core/category.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { readError } from '../../core/format';
 import { Category } from '../../core/models';
+import { NoticeService } from '../../core/notice.service';
 
 @Component({
   selector: 'app-categories',
@@ -13,6 +15,8 @@ import { Category } from '../../core/models';
 export class CategoriesComponent {
   readonly auth = inject(AuthService);
   private readonly api = inject(CategoryService);
+  private readonly confirm = inject(ConfirmService);
+  private readonly notice = inject(NoticeService);
   private readonly formBuilder = inject(FormBuilder);
 
   readonly items = signal<Category[]>([]);
@@ -74,6 +78,7 @@ export class CategoriesComponent {
     request.subscribe({
       next: () => {
         this.saving.set(false);
+        this.notice.show(this.editingId() ? 'Category updated.' : 'Category created.');
         this.cancel();
         this.load();
       },
@@ -84,10 +89,14 @@ export class CategoriesComponent {
     });
   }
 
-  remove(item: Category): void {
-    if (!confirm(`Delete category “${item.name}”?`)) return;
+  async remove(item: Category): Promise<void> {
+    const ok = await this.confirm.ask('Delete category', `Delete “${item.name}”? Products that use it will block this.`);
+    if (!ok) return;
     this.api.delete(item.id).subscribe({
-      next: () => this.load(),
+      next: () => {
+        this.notice.show('Category deleted.');
+        this.load();
+      },
       error: (err: unknown) => this.error.set(readError(err)),
     });
   }
