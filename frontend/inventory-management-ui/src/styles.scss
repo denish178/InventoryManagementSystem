@@ -171,9 +171,52 @@ textarea { resize: vertical; }
   border: 0;
 }
 
+.chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+.chart-card { min-width: 0; }
+.chart-caption { color: var(--muted); font-size: 0.78rem; }
+.stock-health { min-height: 190px; display: flex; align-items: center; justify-content: center; gap: 2rem; }
+.health-donut { width: 150px; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
+.health-donut-center { width: 92px; aspect-ratio: 1; border-radius: 50%; background: var(--card); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.health-donut-center strong { font-size: 1.55rem; }
+.health-donut-center span { color: var(--muted); font-size: 0.78rem; }
+.chart-legend { min-width: 130px; display: grid; gap: 0.65rem; }
+.chart-legend div { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.45rem; }
+.chart-legend strong { font-size: 0.9rem; }
+.stock-category { min-height: 190px; display: flex; align-items: center; justify-content: center; gap: 1.4rem; }
+.category-pie { width: 150px; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
+.category-pie-center { width: 92px; aspect-ratio: 1; border-radius: 50%; background: var(--card); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.category-pie-center strong { font-size: 1.55rem; }
+.category-pie-center span { color: var(--muted); font-size: 0.78rem; }
+.category-legend { min-width: 130px; max-height: 180px; overflow-y: auto; display: grid; gap: 0.5rem; }
+.category-legend div { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.45rem; }
+.category-legend div > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.category-legend strong { font-size: 0.9rem; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+.legend-dot.healthy { background: #2f7d5b; }
+.legend-dot.low { background: #d98b43; }
+.movement-bars { min-height: 190px; display: flex; flex-direction: column; justify-content: center; gap: 1.25rem; }
+.movement-row { display: grid; grid-template-columns: 74px 1fr 48px; align-items: center; gap: 0.65rem; }
+.movement-row > span { color: var(--muted); font-size: 0.82rem; }
+.movement-row > strong { text-align: right; }
+.movement-track, .low-stock-track { height: 22px; border-radius: 5px; background: #edf1f4; overflow: hidden; }
+.movement-bar { height: 100%; min-width: 0; border-radius: 5px; transition: width 300ms ease; }
+.movement-bar.in { background: #2f7d5b; }
+.movement-bar.out { background: #c9535b; }
+.low-stock-chart { display: grid; gap: 0.75rem; }
+.low-stock-row { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; align-items: center; gap: 1rem; }
+.low-stock-label { min-width: 0; }
+.low-stock-label span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.low-stock-label small { color: var(--muted); }
+.low-stock-track { height: 16px; }
+.low-stock-bar { height: 100%; min-width: 2px; border-radius: 5px; background: #d98b43; transition: width 300ms ease; }
+
 @media (max-width: 980px) {
   .stat-grid, .filters { grid-template-columns: 1fr 1fr; }
   .split { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 980px) {
+  .chart-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 800px) {
@@ -191,4 +234,13 @@ textarea { resize: vertical; }
   .nav-toggle { display: inline-flex; }
   .stat-grid, .filters, .detail-grid, .pair { grid-template-columns: 1fr; }
   .page-head, .topbar, .pager { align-items: flex-start; flex-wrap: wrap; }
+  .stock-health { flex-direction: column; gap: 1rem; }
+  .health-donut { width: 132px; }
+  .health-donut-center { width: 82px; }
+  .stock-category { flex-direction: column; gap: 1rem; }
+  .category-pie { width: 132px; }
+  .category-pie-center { width: 82px; }
+  .category-legend { width: min(220px, 100%); }
+  .low-stock-row { grid-template-columns: 1fr; gap: 0.35rem; }
+  .movement-row { grid-template-columns: 64px minmax(0, 1fr) 44px; }
 }

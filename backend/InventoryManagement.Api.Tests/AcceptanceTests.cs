@@ -216,6 +216,40 @@ public class AcceptanceTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task ChangeUserRole_IsReturnedByUserList()
+    {
+        var admin = await LoginAsync("admin@ims.local", "Admin123!");
+        var email = $"role-{Guid.NewGuid():N}@ims.local";
+
+        using var created = await SendAsync(HttpMethod.Post, "/api/users", admin, new
+        {
+            fullName = "Role Test User",
+            email,
+            password = "Viewer123!",
+            role = "Viewer"
+        });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var userId = (await ReadAsync(created)).GetProperty("id").GetString()!;
+
+        using var changed = await SendAsync(HttpMethod.Put, $"/api/users/{userId}/role", admin, new
+        {
+            role = "Inventory Staff"
+        });
+        Assert.Equal(HttpStatusCode.OK, changed.StatusCode);
+
+        using var users = await SendAsync(HttpMethod.Get, "/api/users", admin);
+        Assert.Equal(HttpStatusCode.OK, users.StatusCode);
+        var usersJson = await ReadAsync(users);
+        var changedUser = usersJson.EnumerateArray().Single(user => user.GetProperty("id").GetString() == userId);
+        var roles = changedUser.GetProperty("roles").EnumerateArray()
+            .Select(role => role.GetString())
+            .ToArray();
+
+        Assert.Single(roles);
+        Assert.Equal("Inventory Staff", roles[0]);
+    }
+
+    [Fact]
     public async Task T12_FreshDatabase_SeedsAdminAndAcceptsLogin()
     {
         using var health = await _client.GetAsync("/health");

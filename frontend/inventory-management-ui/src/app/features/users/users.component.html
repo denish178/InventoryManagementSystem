@@ -55,10 +55,11 @@
                     <label class="sr-only" [attr.for]="'role-' + user.id">Role for {{ user.email }}</label>
                     <select
                       [id]="'role-' + user.id"
-                      [value]="user.roles[0] || ''"
                       (change)="changeRole(user, $any($event.target).value)"
                     >
-                      @for (role of roles; track role) { <option [value]="role">{{ role }}</option> }
+                      @for (role of roles; track role) {
+                        <option [value]="role" [selected]="user.roles.includes(role)">{{ role }}</option>
+                      }
                     </select>
                   </td>
                 </tr>

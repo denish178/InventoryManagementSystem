@@ -36,6 +36,22 @@
       <article class="stat"><span>Total stock in</span><strong>{{ data.totalStockIn }}</strong></article>
       <article class="stat"><span>Total stock out</span><strong>{{ data.totalStockOut }}</strong></article>
     </div>
+    <section class="card chart-card">
+      <header class="card-head"><h2>Stock in vs stock out</h2><span class="chart-caption">Filtered movement volume</span></header>
+      @let movementMax = data.totalStockIn > data.totalStockOut ? data.totalStockIn : data.totalStockOut;
+      <div class="movement-bars">
+        <div class="movement-row">
+          <span>Stock in</span>
+          <div class="movement-track"><div class="movement-bar in" [style.width.%]="movementMax > 0 ? (data.totalStockIn / movementMax) * 100 : 0"></div></div>
+          <strong>{{ data.totalStockIn }}</strong>
+        </div>
+        <div class="movement-row">
+          <span>Stock out</span>
+          <div class="movement-track"><div class="movement-bar out" [style.width.%]="movementMax > 0 ? (data.totalStockOut / movementMax) * 100 : 0"></div></div>
+          <strong>{{ data.totalStockOut }}</strong>
+        </div>
+      </div>
+    </section>
     <section class="card">
       @if (data.transactions.length === 0) {
         <p class="empty">No movements match these filters.</p>

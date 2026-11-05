@@ -79,8 +79,10 @@ export class UsersComponent {
     this.error.set('');
     this.usersApi.changeRole(user.id, role).subscribe({
       next: () => {
+        this.users.update((users) => users.map((item) =>
+          item.id === user.id ? { ...item, roles: [role] } : item
+        ));
         this.notice.show(`Role updated for ${user.email}.`);
-        this.load();
       },
       error: (err: unknown) => this.error.set(readError(err)),
     });

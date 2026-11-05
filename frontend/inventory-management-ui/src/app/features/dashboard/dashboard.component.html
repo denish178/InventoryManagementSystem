@@ -33,6 +33,111 @@
       </article>
     </div>
 
+    <div class="chart-grid">
+      <section class="card chart-card stock-health-card">
+        <header class="card-head">
+          <h2>Stock health</h2>
+          <span class="chart-caption">Active products</span>
+        </header>
+        <div class="stock-health">
+          <div
+            class="health-donut"
+            [style.background]="data.totalProducts > 0 ? 'conic-gradient(#2f7d5b 0 ' + ((healthyProductCount / data.totalProducts) * 100) + '%, #d98b43  ' + ((healthyProductCount / data.totalProducts) * 100) + '% 100%)' : '#eef2f6'"
+            role="img"
+            [attr.aria-label]="healthyProductCount + ' healthy products and ' + data.lowStockProducts + ' low-stock products'"
+          >
+            <div class="health-donut-center">
+              <strong>{{ data.totalProducts }}</strong>
+              <span>Total</span>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <div><span class="legend-dot healthy"></span><span>Healthy</span><strong>{{ healthyProductCount }}</strong></div>
+            <div><span class="legend-dot low"></span><span>Low stock</span><strong>{{ data.lowStockProducts }}</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card chart-card stock-category-card">
+        <header class="card-head">
+          <h2>Stock by category</h2>
+          <span class="chart-caption">Units on hand</span>
+        </header>
+        <div class="stock-category">
+          @if (categoryStock().length === 0 || categoryStockTotal === 0) {
+            <p class="empty">No stock data yet.</p>
+          } @else {
+            <div
+              class="category-pie"
+              [style.background]="categoryPieBackground"
+              role="img"
+              [attr.aria-label]="'Stock distribution across ' + categoryStock().length + ' categories'"
+            >
+              <div class="category-pie-center">
+                <strong>{{ categoryStockTotal }}</strong>
+                <span>Units</span>
+              </div>
+            </div>
+            <div class="category-legend">
+              @for (item of categoryStock(); track item.name) {
+                <div>
+                  <span class="legend-dot" [style.background]="item.color"></span>
+                  <span>{{ item.name }}</span>
+                  <strong>{{ item.quantity }}</strong>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="card chart-card">
+        <header class="card-head">
+          <h2>Recent movements</h2>
+          <span class="chart-caption">Last {{ data.recentMovements.length }} entries</span>
+        </header>
+        @if (data.recentMovements.length === 0) {
+          <p class="empty">No movement data yet.</p>
+        } @else {
+          @let movementMax = stockInTotal > stockOutTotal ? stockInTotal : stockOutTotal;
+          <div class="movement-bars">
+            <div class="movement-row">
+              <span>Stock in</span>
+              <div class="movement-track"><div class="movement-bar in" [style.width.%]="movementMax > 0 ? (stockInTotal / movementMax) * 100 : 0"></div></div>
+              <strong>{{ stockInTotal }}</strong>
+            </div>
+            <div class="movement-row">
+              <span>Stock out</span>
+              <div class="movement-track"><div class="movement-bar out" [style.width.%]="movementMax > 0 ? (stockOutTotal / movementMax) * 100 : 0"></div></div>
+              <strong>{{ stockOutTotal }}</strong>
+            </div>
+          </div>
+        }
+      </section>
+    </div>
+
+    <section class="card chart-card">
+      <header class="card-head">
+        <h2>Lowest stock levels</h2>
+        <a routerLink="/reports/low-stock">Open report</a>
+      </header>
+      @if (data.lowStock.length === 0) {
+        <p class="empty">No products are currently at or below their reorder level.</p>
+      } @else {
+        <div class="low-stock-chart">
+          @for (item of data.lowStock; track item.id) {
+            @let barMax = item.reorderLevel > item.quantityInStock ? item.reorderLevel : item.quantityInStock;
+            <div class="low-stock-row">
+              <div class="low-stock-label"><span>{{ item.name }}</span><small>{{ item.quantityInStock }} on hand / {{ item.reorderLevel }} reorder</small></div>
+              <div class="low-stock-track">
+                <div class="low-stock-bar" [style.width.%]="barMax > 0 ? (item.quantityInStock / barMax) * 100 : 0"></div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
     <div class="split">
       <section class="card">
         <header class="card-head">
