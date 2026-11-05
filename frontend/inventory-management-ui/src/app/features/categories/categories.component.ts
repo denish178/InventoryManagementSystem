@@ -6,6 +6,7 @@ import { ConfirmService } from '../../core/confirm.service';
 import { readError } from '../../core/format';
 import { Category } from '../../core/models';
 import { NoticeService } from '../../core/notice.service';
+import { map } from 'rxjs';
 
 @Component({
   selector: 'app-categories',
@@ -71,9 +72,18 @@ export class CategoriesComponent {
     this.error.set('');
     const value = this.form.getRawValue();
     const description = value.description.trim() || null;
-    const request = this.editingId()
-      ? this.api.update(this.editingId()!, { name: value.name.trim(), description, isActive: value.isActive })
-      : this.api.create({ name: value.name.trim(), description });
+    const id = this.editingId();
+
+const request = id
+  ? this.api.update(id, {
+      name: value.name.trim(),
+      description,
+      isActive: value.isActive,
+    }).pipe(map(() => undefined))
+  : this.api.create({
+      name: value.name.trim(),
+      description,
+    }).pipe(map(() => undefined));
 
     request.subscribe({
       next: () => {

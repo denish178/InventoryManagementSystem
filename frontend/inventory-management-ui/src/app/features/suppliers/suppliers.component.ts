@@ -6,6 +6,7 @@ import { readError } from '../../core/format';
 import { Supplier } from '../../core/models';
 import { NoticeService } from '../../core/notice.service';
 import { SupplierService } from '../../core/supplier.service';
+import { map } from 'rxjs';
 
 @Component({
   selector: 'app-suppliers',
@@ -84,9 +85,11 @@ export class SuppliersComponent {
     };
     this.saving.set(true);
     this.error.set('');
-    const request = this.editingId()
-      ? this.api.update(this.editingId()!, body)
-      : this.api.create(body);
+    const id = this.editingId();
+
+const request = id
+  ? this.api.update(id, body).pipe(map(() => undefined))
+  : this.api.create(body).pipe(map(() => undefined));
     request.subscribe({
       next: () => {
         this.saving.set(false);

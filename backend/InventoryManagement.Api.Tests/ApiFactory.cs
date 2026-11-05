@@ -9,23 +9,40 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     private readonly string _databasePath = Path.Combine(Path.GetTempPath(), $"ims-{Guid.NewGuid():N}.db");
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
+{
+    builder.UseEnvironment("Testing");
+
+    builder.UseSetting(
+        "ConnectionStrings:DefaultConnection",
+        $"Data Source={_databasePath}");
+
+    builder.UseSetting(
+        "Jwt:Key",
+        "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=");
+
+    builder.UseSetting("Jwt:Issuer", "InventoryManagement");
+    builder.UseSetting("Jwt:Audience", "InventoryManagement");
+
+    builder.UseSetting("AdminSeed:Email", "admin@ims.local");
+    builder.UseSetting("AdminSeed:Password", "Admin123!");
+    builder.UseSetting("AdminSeed:FullName", "System Admin");
+    builder.UseSetting("SeedDemoData", "false");
+
+    builder.ConfigureAppConfiguration((_, config) =>
     {
-        builder.UseEnvironment("Testing");
-        builder.ConfigureAppConfiguration((_, config) =>
+        config.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            config.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:DefaultConnection"] = $"Data Source={_databasePath}",
-                ["Jwt:Key"] = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
-                ["Jwt:Issuer"] = "InventoryManagement",
-                ["Jwt:Audience"] = "InventoryManagement",
-                ["AdminSeed:Email"] = "admin@ims.local",
-                ["AdminSeed:Password"] = "Admin123!",
-                ["AdminSeed:FullName"] = "System Admin",
-                ["SeedDemoData"] = "false"
-            });
+            ["ConnectionStrings:DefaultConnection"] = $"Data Source={_databasePath}",
+            ["Jwt:Key"] = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+            ["Jwt:Issuer"] = "InventoryManagement",
+            ["Jwt:Audience"] = "InventoryManagement",
+            ["AdminSeed:Email"] = "admin@ims.local",
+            ["AdminSeed:Password"] = "Admin123!",
+            ["AdminSeed:FullName"] = "System Admin",
+            ["SeedDemoData"] = "false"
         });
-    }
+    });
+}
 
     protected override void Dispose(bool disposing)
     {

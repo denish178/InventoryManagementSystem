@@ -7,6 +7,7 @@ import { Category, Supplier } from '../../core/models';
 import { NoticeService } from '../../core/notice.service';
 import { ProductService } from '../../core/product.service';
 import { SupplierService } from '../../core/supplier.service';
+import { map } from 'rxjs';
 
 @Component({
   selector: 'app-product-form',
@@ -103,7 +104,9 @@ export class ProductFormComponent {
     this.saving.set(true);
     this.error.set('');
     const id = this.productId();
-    const request = id ? this.products.update(id, body) : this.products.create(body);
+    const request = id
+  ? this.products.update(id, body).pipe(map(() => undefined))
+  : this.products.create(body).pipe(map(() => undefined));
     request.subscribe({
       next: () => {
         this.saving.set(false);

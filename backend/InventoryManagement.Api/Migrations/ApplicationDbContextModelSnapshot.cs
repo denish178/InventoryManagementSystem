@@ -109,14 +109,17 @@ namespace InventoryManagement.Api.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_CI_AS");
 
                     b.HasKey("Id");
 
@@ -141,14 +144,16 @@ namespace InventoryManagement.Api.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<int>("QuantityInStock")
                         .HasColumnType("int");
@@ -158,7 +163,9 @@ namespace InventoryManagement.Api.Migrations
 
                     b.Property<string>("SKU")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .UseCollation("Latin1_General_CI_AS");
 
                     b.Property<int>("SupplierId")
                         .HasColumnType("int");
@@ -174,12 +181,21 @@ namespace InventoryManagement.Api.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("Name");
+
                     b.HasIndex("SKU")
                         .IsUnique();
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", t =>
+                        {
+                            t.HasCheckConstraint("CK_Products_Quantity_NonNegative", "[QuantityInStock] >= 0");
+
+                            t.HasCheckConstraint("CK_Products_ReorderLevel_NonNegative", "[ReorderLevel] >= 0");
+
+                            t.HasCheckConstraint("CK_Products_UnitPrice_NonNegative", "[UnitPrice] >= 0");
+                        });
                 });
 
             modelBuilder.Entity("InventoryManagement.Api.Entities.StockTransaction", b =>
@@ -194,10 +210,12 @@ namespace InventoryManagement.Api.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
@@ -206,17 +224,28 @@ namespace InventoryManagement.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("ReferenceNumber")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("TransactionType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("CreatedAt");
 
-                    b.ToTable("StockTransactions");
+                    b.HasIndex("TransactionType");
+
+                    b.HasIndex("ProductId", "CreatedAt");
+
+                    b.ToTable("StockTransactions", t =>
+                        {
+                            t.HasCheckConstraint("CK_StockTransactions_Quantity_Positive", "[Quantity] > 0");
+
+                            t.HasCheckConstraint("CK_StockTransactions_Type", "[TransactionType] IN ('StockIn', 'StockOut')");
+                        });
                 });
 
             modelBuilder.Entity("InventoryManagement.Api.Entities.Supplier", b =>
@@ -228,26 +257,31 @@ namespace InventoryManagement.Api.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<string>("ContactPerson")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Phone")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.HasKey("Id");
 
