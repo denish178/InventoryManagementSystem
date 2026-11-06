@@ -37,12 +37,25 @@ builder.Services.AddDbContext<ApplicationDbContext>((services, options) =>
         return;
     }
 
+    if (builder.Environment.IsDevelopment())
+    {
+        options.UseSqlite("Data Source=ims-dev.db");
+        return;
+    }
+
     if (string.IsNullOrWhiteSpace(connectionString))
     {
         throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
     }
 
-    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(5));
+    if (connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlite(connectionString);
+    }
+    else
+    {
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(5));
+    }
 });
 
 builder.Services
